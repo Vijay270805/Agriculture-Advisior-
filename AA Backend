@@ -1,0 +1,83 @@
+You said:
+from flask import Flask, render_template, request
+import openai
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Set up your OpenAI API key
+openai.api_key = "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"
+
+def generate_agricultural_advice(season, area, time_period, crop_type, investment):
+    """
+    Generate agricultural advice using OpenAI's GPT model based on inputs.
+    """
+    prompt = f"""
+    Given the following agricultural conditions:
+    - Season: {season}
+    - Area: {area} hectares
+    - Time period: {time_period} months
+    - Crop type: {crop_type}
+    - Investment available: {investment} USD
+
+    Please provide advice on the following:
+    1. Is {crop_type} the best crop for this season and time period?
+    2. What type of fertilizer should be used for {crop_type} in this area?
+    3. What are the optimal watering practices for this crop during the {season} season?
+    4. How should the investment of {investment} USD be allocated to maximize yield?
+    5. Are there any other important recommendations or risks to consider for this crop?
+    """
+    
+    # Send the prompt to OpenAI GPT
+    response = openai.Completion.create(
+        engine="",  # Or gpt-4
+        prompt=prompt,
+        max_tokens=400,
+        temperature=0.7
+    )
+    
+    advice = response.choices[0].text.strip()
+    return advice
+
+def generate_image(season, crop_type):
+    """
+    Generate an image using OpenAI's DALL-E based on season and crop type.
+    """
+    # Create a prompt to generate the image
+    image_prompt = f"A beautiful farm in the {season} season, growing {crop_type} crops."
+    
+    # Send the image generation request to DALL-E
+    response = openai.Image.create(
+        prompt=image_prompt,
+        n=1,
+        size="1024x1024"
+    )
+    
+    # Get the URL of the generated image
+    image_url = response['data'][0]['url']
+    return image_url
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        # Get user inputs from the form
+        season = request.form['season']
+        area = request.form['area']
+        time_period = request.form['time_period']
+        crop_type = request.form['crop_type']
+        investment = request.form['investment']
+        
+        # Generate agricultural advice
+        advice = generate_agricultural_advice(season, area, time_period, crop_type, investment)
+        
+        # Generate an image based on the season and crop type
+        image_url = generate_image(season, crop_type)
+        
+        # Render the result on the same page, along with the image
+        return render_template('index.html', advice=advice, image_url=image_url)
+    
+    # On GET request, just render the form
+    return render_template('index.html', advice=None, image_url=None)
+
+if __name__ == '_main_':
+    app.run(debug=True) 
